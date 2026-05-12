@@ -3,14 +3,14 @@ const apiBase = "/api";
 const typeNames = {
   1: "Elektrik",
   2: "Su",
-  3: "Internet",
+  3: "İnternet",
   4: "GSM",
-  5: "Diger"
+  5: "Diğer"
 };
 
 const statusNames = {
-  1: "Basarili",
-  2: "Basarisiz"
+  1: "Başarılı",
+  2: "Başarısız"
 };
 
 let currentCustomer = JSON.parse(localStorage.getItem("customer") || "null");
@@ -24,14 +24,19 @@ let paymentItems = [];
 let selectedSubscriptionId = null;
 
 async function request(path, options) {
+  const headers = { "Content-Type": "application/json", ...(options?.headers || {}) };
+  if (currentCustomer?.isAdmin) {
+    headers["X-Admin-User-Id"] = currentCustomer.id;
+  }
+
   const response = await fetch(`${apiBase}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options
+    ...options,
+    headers
   });
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "Islem basarisiz oldu.");
+    throw new Error(message || "İşlem başarısız oldu.");
   }
 
   if (response.status === 204) {
@@ -49,10 +54,12 @@ function setCurrentCustomer(customer) {
 
 function renderSession() {
   const isLoggedIn = Boolean(currentCustomer);
+  const isAdmin = Boolean(currentCustomer?.isAdmin);
   document.querySelector("#authPanel").classList.toggle("hidden", isLoggedIn);
   document.querySelector("#appPanel").classList.toggle("hidden", !isLoggedIn);
   document.querySelector("#mainNav").classList.toggle("hidden", !isLoggedIn);
   document.querySelector("#customerInfo").classList.toggle("hidden", !isLoggedIn);
+  document.querySelector("#adminControls").classList.toggle("hidden", !isAdmin);
 
   if (!isLoggedIn) {
     return;
@@ -117,17 +124,18 @@ function renderTestDateInfo() {
   }
 
   info.textContent = appDateInfo.isTestMode
-    ? `Aktif tarih: ${appDateInfo.activeDate} | Gercek tarih: ${appDateInfo.realDate}`
-    : `Gercek tarih kullaniliyor: ${appDateInfo.realDate}`;
+    ? `Aktif tarih: ${appDateInfo.activeDate} | Gerçek tarih: ${appDateInfo.realDate}`
+    : `Gerçek tarih kullanılıyor: ${appDateInfo.realDate}`;
   input.value = appDateInfo.activeDate;
 }
 
 function fillProfileForm() {
-  document.querySelector("#profileName").value = currentCustomer.fullName;
-  document.querySelector("#profileEmail").value = currentCustomer.email;
-  document.querySelector("#profilePhone").value = currentCustomer.phoneNumber;
-  document.querySelector("#profileUsername").value = currentCustomer.username;
-  document.querySelector("#profilePassword").value = "";
+  document.querySelector("#profileInfo").innerHTML = `
+    <div class="profile-row"><strong>Ad Soyad</strong><span>${currentCustomer.fullName}</span></div>
+    <div class="profile-row"><strong>Email</strong><span>${currentCustomer.email}</span></div>
+    <div class="profile-row"><strong>Telefon</strong><span>${currentCustomer.phoneNumber}</span></div>
+    <div class="profile-row"><strong>Kullanıcı adı</strong><span>${currentCustomer.username}</span></div>
+  `;
 }
 
 async function loadDashboard() {
@@ -144,7 +152,7 @@ function renderSubscriptions() {
   const container = document.querySelector("#subscriptions");
 
   if (subscriptionItems.length === 0) {
-    container.innerHTML = `<p class="muted">Henuz abonelik yok.</p>`;
+    container.innerHTML = `<p class="muted">Henüz abonelik yok.</p>`;
     return;
   }
 
@@ -156,7 +164,7 @@ function renderSubscriptions() {
     .sort((a, b) => compareSubscriptions(a, b, sort));
 
   if (items.length === 0) {
-    container.innerHTML = `<p class="muted">Aramaya uygun abonelik bulunamadi.</p>`;
+    container.innerHTML = `<p class="muted">Aramaya uygun abonelik bulunamadı.</p>`;
     return;
   }
 
@@ -167,7 +175,7 @@ function renderSubscriptions() {
     return `
     <div class="row ${status.className}">
       <strong>${typeNames[subscription.type]} - ${subscription.providerName}</strong>
-      <span class="muted">No: ${subscription.subscriberNumber} | Durum: ${subscription.status === 1 ? "Aktif" : "Pasif"} | Fatura kesim gunu: ${subscription.billingDay} | Odeme tercihi: Her ayin ${subscription.preferredPaymentDay}. gunu</span>
+      <span class="muted">No: ${subscription.subscriberNumber} | Durum: ${subscription.status === 1 ? "Aktif" : "Pasif"} | Fatura kesim günü: ${subscription.billingDay} | Ödeme tercihi: Her ayın ${subscription.preferredPaymentDay}. günü</span>
       <span class="status-label">${status.label}</span>
       <div class="actions">
         <button onclick="openSubscriptionDetail(${subscription.id})">Detay</button>
@@ -219,7 +227,7 @@ function getSubscriptionStatus(subscription, payments) {
   }
 
   if (paidThisMonth) {
-    return { className: "subscription-paid", label: "Bu ay odendi", rank: 4 };
+    return { className: "subscription-paid", label: "Bu ay ödendi", rank: 4 };
   }
 
   const dueDate = new Date(today.getFullYear(), today.getMonth(), subscription.preferredPaymentDay);
@@ -227,14 +235,14 @@ function getSubscriptionStatus(subscription, payments) {
   const daysUntilPayment = Math.ceil((dueDate - startOfToday) / 86400000);
 
   if (daysUntilPayment <= 0) {
-    return { className: "subscription-overdue", label: daysUntilPayment === 0 ? "Odeme gunu bugun" : "Odeme gunu gecti", rank: 1 };
+    return { className: "subscription-overdue", label: daysUntilPayment === 0 ? "Ödeme günü bugün" : "Ödeme günü geçti", rank: 1 };
   }
 
   if (daysUntilPayment <= 7) {
-    return { className: "subscription-due-soon", label: `Odeme gunune ${daysUntilPayment} gun kaldi`, rank: 2 };
+    return { className: "subscription-due-soon", label: `Ödeme gününe ${daysUntilPayment} gün kaldı`, rank: 2 };
   }
 
-  return { className: "", label: "Odeme tarihi bekleniyor", rank: 3 };
+  return { className: "", label: "Ödeme tarihi bekleniyor", rank: 3 };
 }
 
 async function loadPayments() {
@@ -246,7 +254,7 @@ function renderPayments() {
   const container = document.querySelector("#payments");
 
   if (paymentItems.length === 0) {
-    container.innerHTML = `<p class="muted">Henuz odeme kaydi yok.</p>`;
+    container.innerHTML = `<p class="muted">Henüz ödeme kaydı yok.</p>`;
     return;
   }
 
@@ -257,7 +265,7 @@ function renderPayments() {
     .sort((a, b) => comparePayments(a, b, sort));
 
   if (items.length === 0) {
-    container.innerHTML = `<p class="muted">Aramaya uygun odeme kaydi bulunamadi.</p>`;
+    container.innerHTML = `<p class="muted">Aramaya uygun ödeme kaydı bulunamadı.</p>`;
     return;
   }
 
@@ -265,7 +273,7 @@ function renderPayments() {
     <div class="row">
       <strong>${typeNames[payment.subscriptionType]} - ${payment.providerName} | ${payment.amount} TL</strong>
       <span class="muted">Abonelik No: ${payment.subscriberNumber}</span>
-      <span class="muted">Donem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
+      <span class="muted">Dönem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
     </div>
   `).join("")}</div>`;
 }
@@ -310,28 +318,28 @@ async function loadReminders() {
   const container = document.querySelector("#reminders");
 
   if (reminders.length === 0) {
-    container.innerHTML = "Yaklasan veya gecmis odeme bildirimi yok.";
+    container.innerHTML = "Yaklaşan veya geçmiş ödeme bildirimi yok.";
     return;
   }
 
   container.innerHTML = `<div class="list">${reminders.map(item => `
     <div class="row">
       <strong>${item.providerName}</strong>
-      <span class="muted">${getReminderMessage(item)} Donem: ${item.period} | Planlanan odeme gunu: ${item.dueDate}</span>
+      <span class="muted">${getReminderMessage(item)} Dönem: ${item.period} | Planlanan ödeme günü: ${item.dueDate}</span>
     </div>
   `).join("")}</div>`;
 }
 
 function getReminderMessage(item) {
   if (item.daysUntilPayment < 0) {
-    return `Odeme gunu ${Math.abs(item.daysUntilPayment)} gun gecti.`;
+    return `Ödeme günü ${Math.abs(item.daysUntilPayment)} gün geçti.`;
   }
 
   if (item.daysUntilPayment === 0) {
-    return "Odeme gunu bugun.";
+    return "Ödeme günü bugün.";
   }
 
-  return `Odeme gunune ${item.daysUntilPayment} gun kaldi.`;
+  return `Ödeme gününe ${item.daysUntilPayment} gün kaldı.`;
 }
 
 async function queryDebt(subscriptionId) {
@@ -348,7 +356,7 @@ async function queryDebt(subscriptionId) {
 
   lastDebtBySubscription[subscriptionId] = debt;
   if (target) {
-    target.textContent = `Borc: ${debt.amount} TL | Fatura kesim gunu: ${debt.dueDate} | Donem: ${debt.period}`;
+    target.textContent = `Borç: ${debt.amount} TL | Fatura kesim günü: ${debt.dueDate} | Dönem: ${debt.period}`;
   }
   return debt;
 }
@@ -375,7 +383,7 @@ async function payDebt(subscriptionId) {
 }
 
 async function deleteSubscription(id) {
-  if (!confirm("Bu aboneligi silmek istediginize emin misiniz?")) {
+  if (!confirm("Bu aboneliği silmek istediğinize emin misiniz?")) {
     return;
   }
 
@@ -400,7 +408,7 @@ function renderSubscriptionDetail() {
   const history = document.querySelector("#subscriptionPaymentHistory");
 
   if (!subscription) {
-    detail.innerHTML = `<p class="muted">Abonelik bulunamadi.</p>`;
+    detail.innerHTML = `<p class="muted">Abonelik bulunamadı.</p>`;
     history.innerHTML = "";
     return;
   }
@@ -416,13 +424,13 @@ function renderSubscriptionDetail() {
       <strong>${typeNames[subscription.type]} - ${subscription.providerName}</strong>
       <span class="muted">Abonelik No: ${subscription.subscriberNumber}</span>
       <span class="muted">Durum: ${subscription.status === 1 ? "Aktif" : "Pasif"}</span>
-      <span class="muted">Fatura kesim gunu: Her ayin ${subscription.billingDay}. gunu</span>
-      <span class="muted">Odeme tercihi: Her ayin ${subscription.preferredPaymentDay}. gunu</span>
+      <span class="muted">Fatura kesim günü: Her ayın ${subscription.billingDay}. günü</span>
+      <span class="muted">Ödeme tercihi: Her ayın ${subscription.preferredPaymentDay}. günü</span>
       <span class="status-label">${status.label}</span>
       <div id="debt-${subscription.id}" class="muted"></div>
       <div class="actions">
-        <button ${subscription.status !== 1 ? "disabled" : ""} onclick="queryDebt(${subscription.id})">Borc Sorgula</button>
-        <button ${subscription.status !== 1 ? "disabled" : ""} class="secondary" onclick="payDebt(${subscription.id})">Ode</button>
+        <button ${subscription.status !== 1 ? "disabled" : ""} onclick="queryDebt(${subscription.id})">Borç Sorgula</button>
+        <button ${subscription.status !== 1 ? "disabled" : ""} class="secondary" onclick="payDebt(${subscription.id})">Öde</button>
         <button class="secondary" onclick="toggleSubscriptionStatus(${subscription.id}, ${subscription.status === 1 ? 2 : 1})">${subscription.status === 1 ? "Pasife Al" : "Aktif Et"}</button>
         <button class="danger" onclick="deleteSubscription(${subscription.id})">Sil</button>
       </div>
@@ -431,11 +439,11 @@ function renderSubscriptionDetail() {
 
   const payments = paymentItems.filter(payment => payment.subscriptionId === subscription.id);
   history.innerHTML = payments.length === 0
-    ? `<p class="muted">Bu abonelige ait odeme kaydi yok.</p>`
+    ? `<p class="muted">Bu aboneliğe ait ödeme kaydı yok.</p>`
     : `<div class="list">${payments.map(payment => `
       <div class="row">
         <strong>${payment.amount} TL</strong>
-        <span class="muted">Donem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
+        <span class="muted">Dönem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
       </div>
     `).join("")}</div>`;
 }
@@ -480,7 +488,7 @@ async function validateSubscription() {
   }
 
   validatedSubscription = { ...requestBody, billingDay: result.billingDay };
-  resultContainer.textContent = `${result.message} Fatura kesim gunu: Her ayin ${result.billingDay}. gunu.`;
+  resultContainer.textContent = `${result.message} Fatura kesim günü: Her ayın ${result.billingDay}. günü.`;
   document.querySelector("#paymentPreferenceFields").classList.remove("hidden");
 }
 
@@ -495,6 +503,7 @@ document.querySelector("#loginForm").addEventListener("submit", async event => {
   });
 
   event.target.reset();
+  currentPage = "home";
   setCurrentCustomer(customer);
 });
 
@@ -512,30 +521,12 @@ document.querySelector("#registerForm").addEventListener("submit", async event =
   });
 
   event.target.reset();
+  currentPage = "home";
   setCurrentCustomer(customer);
 });
 
-document.querySelector("#profileForm").addEventListener("submit", async event => {
-  event.preventDefault();
-  await request(`/customers/${currentCustomer.id}`, {
-    method: "PUT",
-    body: JSON.stringify({
-      fullName: document.querySelector("#profileName").value,
-      email: document.querySelector("#profileEmail").value,
-      phoneNumber: document.querySelector("#profilePhone").value,
-      username: document.querySelector("#profileUsername").value,
-      password: document.querySelector("#profilePassword").value || null
-    })
-  });
-
-  const updated = await request(`/customers/${currentCustomer.id}`);
-  setCurrentCustomer(updated);
-  showPage("profile");
-  alert("Profil guncellendi.");
-});
-
 document.querySelector("#deleteAccountButton").addEventListener("click", async () => {
-  if (!confirm("Hesabinizi silmek istediginize emin misiniz? Tum abonelik ve odeme kayitlari silinir.")) {
+  if (!confirm("Hesabınızı silmek istediğinize emin misiniz? Abonelik ve ödeme kayıtları korunarak hesabınız pasife alınır.")) {
     return;
   }
 
@@ -568,7 +559,7 @@ document.querySelector("#editSubscriptionForm").addEventListener("submit", async
 
   await Promise.all([loadSubscriptions(), loadReminders()]);
   renderSubscriptionDetail();
-  alert("Abonelik guncellendi.");
+  alert("Abonelik güncellendi.");
 });
 
 document.querySelector("#subscriptionForm").addEventListener("submit", async event => {
@@ -579,7 +570,7 @@ document.querySelector("#subscriptionForm").addEventListener("submit", async eve
       validatedSubscription.type !== currentFormValues.type ||
       validatedSubscription.providerName !== currentFormValues.providerName ||
       validatedSubscription.subscriberNumber !== currentFormValues.subscriberNumber) {
-    alert("Once aboneligi kontrol edin.");
+    alert("Önce aboneliği kontrol edin.");
     return;
   }
 
@@ -626,6 +617,28 @@ document.querySelector("#resetTestDateButton").addEventListener("click", async (
   appDateInfo = await request("/test-date", { method: "DELETE" });
   renderDateBanner();
   await loadDashboard();
+});
+
+document.querySelector("#hardDeleteCustomerForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const customerId = Number(document.querySelector("#hardDeleteCustomerId").value);
+  if (!confirm(`${customerId} ID'li müşteri kalıcı olarak silinsin mi? Bu işlem abonelik ve ödeme kayıtlarını da siler.`)) {
+    return;
+  }
+
+  await request(`/admin/customers/${customerId}/hard-delete`, { method: "DELETE" });
+  event.target.reset();
+
+  if (currentCustomer?.id === customerId) {
+    localStorage.removeItem("customer");
+    currentCustomer = null;
+    lastDebtBySubscription = {};
+    selectedSubscriptionId = null;
+    currentPage = "home";
+    renderSession();
+  }
+
+  alert("Müşteri kalıcı olarak silindi.");
 });
 
 document.querySelector("#logoutButton").addEventListener("click", () => {

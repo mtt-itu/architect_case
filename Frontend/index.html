@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abonelik ve Ödeme Hatırlatma</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Abonelik ve Ödeme Hatırlatma</h1>
+      <p>Müşteri girişi ile abonelik ve ödeme takibi.</p>
+      <div id="customerInfo" class="customer-info hidden"></div>
+    </div>
+    <nav id="mainNav" class="hidden">
+      <button id="homeNav" class="nav-button">Ana Sayfa</button>
+      <button id="profileNav" class="nav-button">Profil</button>
+      <button id="addSubscriptionNav" class="nav-button">Abonelik Ekle</button>
+      <button id="logoutButton" class="nav-button danger">Çıkış Yap</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="authPanel" class="auth-grid">
+      <div class="card">
+        <h2>Giriş Yap</h2>
+        <form id="loginForm">
+          <input id="loginUsername" placeholder="Kullanıcı adı" required>
+          <input id="loginPassword" placeholder="Şifre" type="password" required>
+          <button type="submit">Giriş Yap</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Kayıt Ol</h2>
+        <form id="registerForm">
+          <input id="registerName" placeholder="Ad Soyad" required>
+          <input id="registerEmail" placeholder="Email" type="email" required>
+          <input id="registerPhone" placeholder="Telefon" required>
+          <input id="registerUsername" placeholder="Kullanıcı adı" required>
+          <input id="registerPassword" placeholder="Şifre" type="password" required>
+          <button type="submit">Kayıt Ol</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="appPanel" class="hidden">
+      <section id="homePage" class="app-grid page-section">
+      <section id="adminControls" class="card wide admin-only hidden">
+        <div class="section-title">
+          <h2>Admin İşlemleri</h2>
+        </div>
+
+        <div class="admin-grid">
+          <div>
+            <strong>Test Tarihi</strong>
+            <div id="testDateInfo" class="muted">Tarih bilgisi yükleniyor.</div>
+            <form id="testDateForm" class="inline-form">
+              <input id="testDateInput" type="date" required>
+              <button type="submit" class="small-button">Tarihi Uygula</button>
+              <button id="resetTestDateButton" type="button" class="secondary small-button">Gerçek Tarihe Dön</button>
+            </form>
+          </div>
+
+          <div>
+            <strong>Müşteri Hard Delete</strong>
+            <p class="muted">Müşteriyi, aboneliklerini ve ödeme kayıtlarını veritabanından fiziksel olarak siler.</p>
+            <form id="hardDeleteCustomerForm" class="inline-form">
+              <input id="hardDeleteCustomerId" type="number" min="1" placeholder="Müşteri ID" required>
+              <button type="submit" class="danger small-button">Kalıcı Sil</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="card wide">
+        <div class="section-title">
+          <h2>Bildirimler</h2>
+          <button id="refreshReminders" class="secondary small-button">Kontrol Et</button>
+        </div>
+        <div id="reminders" class="muted">Aktif müşteri girişi bekleniyor.</div>
+      </section>
+
+      <section class="card wide">
+        <div class="section-title">
+          <h2>Aboneliklerim</h2>
+          <button id="refreshSubscriptions" class="secondary small-button">Yenile</button>
+        </div>
+        <div class="list-controls">
+          <input id="subscriptionSearch" placeholder="Abonelik ara...">
+          <select id="subscriptionSort">
+            <option value="critical">Kritik olanlar önde</option>
+            <option value="paid">Ödenenler önde</option>
+            <option value="provider">Sağlayıcı adına göre</option>
+            <option value="preferredDay">Ödeme gününe göre</option>
+            <option value="billingDay">Fatura kesim gününe göre</option>
+          </select>
+        </div>
+        <div id="subscriptions"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="section-title">
+          <h2>Ödeme Geçmişim</h2>
+          <button id="refreshPayments" class="secondary small-button">Yenile</button>
+        </div>
+        <div class="list-controls">
+          <input id="paymentSearch" placeholder="Ödeme ara...">
+          <select id="paymentSort">
+            <option value="newest">En yeni ödeme</option>
+            <option value="oldest">En eski ödeme</option>
+            <option value="amountDesc">Tutar yüksekten düşüğe</option>
+            <option value="amountAsc">Tutar düşükten yükseğe</option>
+            <option value="successful">Başarılı ödemeler</option>
+            <option value="failed">Başarısız ödemeler</option>
+          </select>
+        </div>
+        <div id="payments"></div>
+      </section>
+      </section>
+
+      <section id="profilePage" class="app-grid page-section hidden">
+        <section class="card wide narrow-card">
+          <h2>Profil Bilgileri</h2>
+          <p class="muted">Müşteri bilgileri sadece görüntülenebilir. Güncelleme işlemi desteklenmez.</p>
+          <div id="profileInfo" class="profile-info"></div>
+          <form id="deleteAccountForm">
+            <button id="deleteAccountButton" type="button" class="danger">Hesabımı Sil</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="subscriptionDetailPage" class="app-grid page-section hidden">
+        <section class="card wide">
+          <div class="section-title">
+            <h2>Abonelik Detayı</h2>
+            <button id="backToHomeButton" class="secondary small-button">Ana Sayfaya Dön</button>
+          </div>
+          <div id="subscriptionDetail"></div>
+        </section>
+
+        <section class="card wide">
+          <h2>Abonelik Güncelle</h2>
+          <form id="editSubscriptionForm">
+            <select id="editSubscriptionType" required>
+              <option value="1">Elektrik</option>
+              <option value="2">Su</option>
+              <option value="3">İnternet</option>
+              <option value="4">GSM</option>
+              <option value="5">Diğer</option>
+            </select>
+            <input id="editProviderName" placeholder="Hizmet sağlayıcı" required>
+            <input id="editSubscriberNumber" placeholder="Abonelik / müşteri no" required>
+            <label for="editPreferredPaymentDay">Her ayın hangi gününde ödemek istiyorsunuz?</label>
+            <input id="editPreferredPaymentDay" type="number" min="1" max="28" required>
+            <button type="submit">Aboneliği Güncelle</button>
+          </form>
+        </section>
+
+        <section class="card wide">
+          <h2>Bu Aboneliğin Ödeme Geçmişi</h2>
+          <div id="subscriptionPaymentHistory"></div>
+        </section>
+      </section>
+
+      <section id="addSubscriptionPage" class="app-grid page-section hidden">
+        <section class="card wide narrow-card">
+          <h2>Abonelik Ekle</h2>
+          <p class="muted">Düzenli ödediğin hizmet için abonelik kaydı oluştur.</p>
+          <form id="subscriptionForm">
+            <select id="subscriptionType" required>
+              <option value="1">Elektrik</option>
+              <option value="2">Su</option>
+              <option value="3">İnternet</option>
+              <option value="4">GSM</option>
+              <option value="5">Diğer</option>
+            </select>
+            <input id="providerName" placeholder="Hizmet sağlayıcı" required>
+            <input id="subscriberNumber" placeholder="Abonelik / müşteri no" required>
+            <button id="validateSubscriptionButton" type="button" class="secondary">Aboneliği Kontrol Et</button>
+            <div id="subscriptionValidationResult" class="muted"></div>
+            <div id="paymentPreferenceFields" class="hidden form-section">
+              <label for="preferredPaymentDay">Her ayın hangi gününde ödemek istiyorsunuz?</label>
+              <input id="preferredPaymentDay" type="number" min="1" max="28" value="10" placeholder="Örnek: 15" required>
+              <button type="submit">Aboneliği Kaydet</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

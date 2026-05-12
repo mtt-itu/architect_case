@@ -17,7 +17,7 @@ public class MockSubscriptionProviderController : ControllerBase
 
         if (request.SubscriberNumber.Trim().Length < 4)
         {
-            return BadRequest(new SubscriptionValidationResult(false, 0, "Abonelik numarasi en az 4 karakter olmali."));
+            return BadRequest(new SubscriptionValidationResult(false, 0, "Abonelik numarası en az 4 karakter olmalı."));
         }
 
         var seed = Math.Abs(HashCode.Combine(
@@ -26,6 +26,6 @@ public class MockSubscriptionProviderController : ControllerBase
             request.SubscriberNumber.Trim()));
         var billingDay = 1 + seed % 28;
 
-        return new SubscriptionValidationResult(true, billingDay, "Abonelik dogrulandi.");
+        return new SubscriptionValidationResult(true, billingDay, "Abonelik doğrulandı.");
     }
 }

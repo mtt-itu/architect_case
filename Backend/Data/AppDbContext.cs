@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.Username).HasMaxLength(80).IsRequired();
             entity.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
             entity.HasIndex(x => x.Username).IsUnique();
+            entity.HasQueryFilter(x => !x.IsDeleted);
         });
 
         modelBuilder.Entity<Subscription>(entity =>

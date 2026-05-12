@@ -17,6 +17,6 @@ public class MockPaymentService(HttpClient httpClient)
             return result;
         }
 
-        return new PaymentServiceResult(false, "Odeme servisi cevap vermedi.");
+        return new PaymentServiceResult(false, "Ödeme servisi cevap vermedi.");
     }
 }

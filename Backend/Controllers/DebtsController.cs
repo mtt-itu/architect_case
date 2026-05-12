@@ -25,7 +25,7 @@ public class DebtsController(AppDbContext db, DebtService debtService, AppDateSe
         if (subscription.Status != SubscriptionStatus.Active)
         {
             var today = appDateService.Today;
-            return Ok(new DebtResult(false, 0, today, $"{today.Year:D4}-{today.Month:D2}", "Pasif abonelik icin borc sorgulanamaz."));
+            return Ok(new DebtResult(false, 0, today, $"{today.Year:D4}-{today.Month:D2}", "Pasif abonelik için borç sorgulanamaz."));
         }
 
         return Ok(debtService.QueryDebt(subscription));

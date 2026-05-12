@@ -12,13 +12,13 @@ public class MockPaymentProviderController : ControllerBase
     {
         if (request.Amount <= 0)
         {
-            return BadRequest(new PaymentServiceResult(false, "Odeme tutari gecersiz."));
+            return BadRequest(new PaymentServiceResult(false, "Ödeme tutarı geçersiz."));
         }
 
         var isSuccessful = Random.Shared.Next(1, 101) <= 95;
 
         return isSuccessful
-            ? new PaymentServiceResult(true, "Odeme basarili.")
-            : new PaymentServiceResult(false, "Odeme basarisiz oldu. Lutfen tekrar deneyin.");
+            ? new PaymentServiceResult(true, "Ödeme başarılı.")
+            : new PaymentServiceResult(false, "Ödeme başarısız oldu. Lütfen tekrar deneyin.");
     }
 }

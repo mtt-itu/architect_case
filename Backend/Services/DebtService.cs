@@ -15,17 +15,17 @@ public class DebtService(AppDateService appDateService)
 
         if (subscription.Payments.Any(x => x.Period == period && x.Status == PaymentStatus.Successful))
         {
-            return new DebtResult(false, 0, billingDate, period, "Bu abonelik icin bu ay odeme yapilmis.");
+            return new DebtResult(false, 0, billingDate, period, "Bu abonelik için bu ay ödeme yapılmış.");
         }
 
         if (today < billingDate)
         {
-            return new DebtResult(false, 0, billingDate, period, "Bu abonelik icin fatura kesim tarihi henuz gelmedi.");
+            return new DebtResult(false, 0, billingDate, period, "Bu abonelik için fatura kesim tarihi henüz gelmedi.");
         }
 
         var seed = Math.Abs(HashCode.Combine(subscription.ProviderName, subscription.SubscriberNumber, period));
         var amount = 100 + seed % 900;
 
-        return new DebtResult(true, amount, billingDate, period, "Borc sorgulandi.");
+        return new DebtResult(true, amount, billingDate, period, "Borç sorgulandı.");
     }
 }

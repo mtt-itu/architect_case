@@ -60,7 +60,7 @@ public class PaymentsController(AppDbContext db, DebtService debtService, MockPa
 
         if (subscription.Status != SubscriptionStatus.Active)
         {
-            return BadRequest("Pasif abonelik icin odeme yapilamaz.");
+            return BadRequest("Pasif abonelik için ödeme yapılamaz.");
         }
 
         var debt = debtService.QueryDebt(subscription);

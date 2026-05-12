@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS Customers (
   PhoneNumber VARCHAR(30) NOT NULL,
   Username VARCHAR(80) NOT NULL,
   PasswordHash VARCHAR(500) NOT NULL,
+  IsAdmin BOOLEAN NOT NULL DEFAULT FALSE,
+  IsDeleted BOOLEAN NOT NULL DEFAULT FALSE,
+  DeletedAt DATETIME(6) NULL,
   UNIQUE KEY UX_Customers_Username (Username)
 );
 

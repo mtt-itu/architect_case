@@ -34,7 +34,7 @@ public class CustomersController(AppDbContext db) : ControllerBase
     [HttpPost("register")]
     public async Task<ActionResult<CustomerResponse>> Register(RegisterCustomerRequest request)
     {
-        var usernameExists = await db.Customers.AnyAsync(x => x.Username == request.Username);
+        var usernameExists = await db.Customers.IgnoreQueryFilters().AnyAsync(x => x.Username == request.Username);
         if (usernameExists)
         {
             return BadRequest("Username already exists.");
@@ -73,45 +73,17 @@ public class CustomersController(AppDbContext db) : ControllerBase
         return ToResponse(customer);
     }
 
-    [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, UpdateCustomerRequest request)
-    {
-        var customer = await db.Customers.FindAsync(id);
-        if (customer is null)
-        {
-            return NotFound();
-        }
-
-        var usernameExists = await db.Customers.AnyAsync(x => x.Id != id && x.Username == request.Username);
-        if (usernameExists)
-        {
-            return BadRequest("Username already exists.");
-        }
-
-        customer.FullName = request.FullName;
-        customer.Email = request.Email;
-        customer.PhoneNumber = request.PhoneNumber;
-        customer.Username = request.Username;
-
-        if (!string.IsNullOrWhiteSpace(request.Password))
-        {
-            customer.PasswordHash = _passwordHasher.HashPassword(customer, request.Password);
-        }
-
-        await db.SaveChangesAsync();
-        return NoContent();
-    }
-
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var customer = await db.Customers.FindAsync(id);
+        var customer = await db.Customers.FirstOrDefaultAsync(x => x.Id == id);
         if (customer is null)
         {
             return NotFound();
         }
 
-        db.Customers.Remove(customer);
+        customer.IsDeleted = true;
+        customer.DeletedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
         return NoContent();
@@ -119,11 +91,10 @@ public class CustomersController(AppDbContext db) : ControllerBase
 
     private static CustomerResponse ToResponse(Customer customer)
     {
-        return new CustomerResponse(customer.Id, customer.FullName, customer.Email, customer.PhoneNumber, customer.Username);
+        return new CustomerResponse(customer.Id, customer.FullName, customer.Email, customer.PhoneNumber, customer.Username, customer.IsAdmin);
     }
 }
 
 public record RegisterCustomerRequest(string FullName, string Email, string PhoneNumber, string Username, string Password);
 public record LoginRequest(string Username, string Password);
-public record UpdateCustomerRequest(string FullName, string Email, string PhoneNumber, string Username, string? Password);
-public record CustomerResponse(int Id, string FullName, string Email, string PhoneNumber, string Username);
+public record CustomerResponse(int Id, string FullName, string Email, string PhoneNumber, string Username, bool IsAdmin);

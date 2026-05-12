@@ -1,15 +1,15 @@
-# Abonelik ve Otomatik Odeme Hatirlatma
+# Abonelik ve Otomatik Ödeme Hatırlatma
 
-Sade bir banka abonelik takip uygulamasi. Musteri girisi, profil guncelleme, abonelik, borc sorgulama, odeme ve hatirlatma kontrollerini icerir.
+Sade bir banka abonelik takip uygulaması. Müşteri girişi, profil görüntüleme, abonelik, borç sorgulama, ödeme ve hatırlatma kontrollerini içerir.
 
 ## Teknolojiler
 
 - Backend: .NET 8 Web API
 - Frontend: HTML, CSS, vanilla JavaScript
-- Veritabani: MySQL
+- Veritabanı: MySQL
 - ORM: Entity Framework Core + Pomelo MySQL provider
 
-## Proje Yapisi
+## Proje Yapısı
 
 ```text
 Backend/
@@ -17,31 +17,37 @@ Backend/
   Data/
   Models/
   Services/
-  wwwroot/
-    index.html
-    style.css
-    app.js
+Frontend/
+  assets/
+    favicon.svg
+  index.html
+  style.css
+  app.js
+docs/
+  images/
+    archi_yazilim_er.png
+    archi_yazilim_flow.png
 global.json
 ArchitectCase.sln
 ```
 
 ## Kurulum
 
-MySQL'de veritabani olusturun:
+MySQL'de veritabanı oluşturun:
 
 ```sql
 CREATE DATABASE subscription_reminder_db;
 ```
 
-Isterseniz tablolar icin dogrudan `database.sql` dosyasini calistirabilirsiniz.
+İsterseniz tablolar için doğrudan `database.sql` dosyasını çalıştırabilirsiniz.
 
-`Backend/appsettings.json` icindeki connection string'i kendi MySQL kullaniciniza gore guncelleyin:
+`Backend/appsettings.json` içindeki connection string'i kendi MySQL kullanıcınıza göre güncelleyin:
 
 ```json
 "DefaultConnection": "server=localhost;port=3306;database=subscription_reminder_db;user=root;password=your_password"
 ```
 
-Alternatif olarak EF migration olusturup veritabanini guncelleyin:
+Alternatif olarak EF migration oluşturup veritabanını güncelleyin:
 
 ```powershell
 dotnet tool install --global dotnet-ef
@@ -49,13 +55,13 @@ dotnet ef migrations add InitialCreate --project Backend
 dotnet ef database update --project Backend
 ```
 
-Backend'i calistirin:
+Backend'i çalıştırın:
 
 ```powershell
 dotnet run --project Backend
 ```
 
-Frontend backend icinden servis edilir. Backend calisirken tarayicida su adresi acin:
+Frontend `Frontend/` klasöründedir ve backend tarafından statik dosya olarak servis edilir. Backend çalışırken tarayıcıda şu adresi açın:
 
 ```text
 http://localhost:5041
@@ -67,14 +73,13 @@ Swagger:
 http://localhost:5041/swagger
 ```
 
-## API Ozeti
+## API Özeti
 
 - `GET /api/customers`
 - `POST /api/customers/register`
 - `POST /api/customers/login`
 - `GET /api/customers/{id}`
-- `PUT /api/customers/{id}`
-- `DELETE /api/customers/{id}`
+- `DELETE /api/customers/{id}` soft delete ile hesabı pasife alır
 - `GET /api/subscriptions`
 - `POST /api/subscriptions`
 - `PUT /api/subscriptions/{id}`
@@ -85,9 +90,39 @@ http://localhost:5041/swagger
 - `GET /api/payments/subscription/{subscriptionId}`
 - `GET /api/payments/customer/{customerId}`
 - `GET /api/reminders/customer/{customerId}`
+- `GET /api/test-date`
+- `POST /api/test-date` admin kullanıcının test tarihini ayarlamasını sağlar
+- `DELETE /api/test-date` admin kullanıcının test tarihini gerçek tarihe döndürmesini sağlar
+- `DELETE /api/admin/customers/{id}/hard-delete` admin kullanıcının müşteriyi cascade olarak kalıcı silmesini sağlar
+
+## Admin Modu
+
+- Admin kullanıcı normal müşteri akışlarını kullanabilir; abonelik ekleyebilir, borç sorgulayabilir ve ödeme yapabilir.
+- Admin ek kontrolleri sadece `IsAdmin = true` olan kullanıcı giriş yaptığında ana ekranda görünür.
+- Admin yapmak için mevcut bir kullanıcı kaydına veritabanında `IsAdmin = TRUE` verilebilir.
+- Admin yetkili isteklerde frontend `X-Admin-User-Id` header'ını gönderir.
+- Test tarihi yönetimi ana ekrandaki admin kontrollerinden yapılır.
+- Normal müşteri silme işlemi soft delete yapar ve kayıt geçmişini korur.
+- Admin hard delete işlemi müşteriyi, aboneliklerini ve ödeme kayıtlarını fiziksel olarak siler.
+
+```sql
+UPDATE Customers
+SET IsAdmin = TRUE
+WHERE Username = 'admin_kullanici_adi';
+```
 
 ## Mock Servisler
 
-- `DebtService`: Abonelik bilgilerine gore donemsel borc uretir.
-- `MockPaymentService`: Odeme sonucunu mock olarak basarili veya basarisiz dondurur.
-- `ReminderService`: Aktif ve bu ay odenmemis abonelikleri listeler.
+- `DebtService`: Abonelik bilgilerine göre dönemsel borç üretir.
+- `MockPaymentService`: Ödeme sonucunu mock olarak başarılı veya başarısız döndürür.
+- `ReminderService`: Aktif ve bu ay ödenmemiş abonelikleri listeler.
+
+## Diyagramlar
+
+### ER Diyagramı
+
+![ER Diyagramı](docs/images/archi_yazilim_er.png)
+
+### Borç Sorgulama - Ödeme - Hatırlatma Akışı
+
+![Akış Diyagramı](docs/images/archi_yazilim_flow.png)
