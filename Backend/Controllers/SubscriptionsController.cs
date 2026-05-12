@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +8,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SubscriptionsController(AppDbContext db) : ControllerBase
+public class SubscriptionsController(AppDbContext db, MockSubscriptionProviderService subscriptionProviderService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Subscription>>> GetAll()
@@ -40,6 +41,12 @@ public class SubscriptionsController(AppDbContext db) : ControllerBase
             return BadRequest("Customer not found.");
         }
 
+        var validation = subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
+        if (!validation.IsValid)
+        {
+            return BadRequest(validation.Message);
+        }
+
         var subscription = new Subscription
         {
             CustomerId = request.CustomerId,
@@ -47,13 +54,20 @@ public class SubscriptionsController(AppDbContext db) : ControllerBase
             ProviderName = request.ProviderName,
             SubscriberNumber = request.SubscriberNumber,
             Status = request.Status,
-            PaymentDueDay = request.PaymentDueDay
+            BillingDay = validation.BillingDay,
+            PreferredPaymentDay = request.PreferredPaymentDay
         };
 
         db.Subscriptions.Add(subscription);
         await db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetById), new { id = subscription.Id }, subscription);
+    }
+
+    [HttpPost("validate")]
+    public ActionResult<SubscriptionValidationResult> Validate(ValidateSubscriptionRequest request)
+    {
+        return subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
     }
 
     [HttpPut("{id:int}")]
@@ -65,11 +79,18 @@ public class SubscriptionsController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
+        var validation = subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
+        if (!validation.IsValid)
+        {
+            return BadRequest(validation.Message);
+        }
+
         subscription.Type = request.Type;
         subscription.ProviderName = request.ProviderName;
         subscription.SubscriberNumber = request.SubscriberNumber;
         subscription.Status = request.Status;
-        subscription.PaymentDueDay = request.PaymentDueDay;
+        subscription.BillingDay = validation.BillingDay;
+        subscription.PreferredPaymentDay = request.PreferredPaymentDay;
 
         await db.SaveChangesAsync();
         return NoContent();
@@ -97,11 +118,16 @@ public record CreateSubscriptionRequest(
     string ProviderName,
     string SubscriberNumber,
     SubscriptionStatus Status,
-    int PaymentDueDay);
+    int PreferredPaymentDay);
+
+public record ValidateSubscriptionRequest(
+    SubscriptionType Type,
+    string ProviderName,
+    string SubscriberNumber);
 
 public record UpdateSubscriptionRequest(
     SubscriptionType Type,
     string ProviderName,
     string SubscriberNumber,
     SubscriptionStatus Status,
-    int PaymentDueDay);
+    int PreferredPaymentDay);

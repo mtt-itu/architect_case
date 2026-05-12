@@ -15,6 +15,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddScoped<DebtService>();
 builder.Services.AddScoped<MockPaymentService>();
+builder.Services.AddScoped<MockSubscriptionProviderService>();
 builder.Services.AddScoped<ReminderService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

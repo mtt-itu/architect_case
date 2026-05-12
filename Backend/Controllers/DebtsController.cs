@@ -12,7 +12,10 @@ public class DebtsController(AppDbContext db, DebtService debtService) : Control
     [HttpGet("subscription/{subscriptionId:int}")]
     public async Task<IActionResult> QueryDebt(int subscriptionId)
     {
-        var subscription = await db.Subscriptions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == subscriptionId);
+        var subscription = await db.Subscriptions
+            .AsNoTracking()
+            .Include(x => x.Payments)
+            .FirstOrDefaultAsync(x => x.Id == subscriptionId);
         if (subscription is null)
         {
             return NotFound();

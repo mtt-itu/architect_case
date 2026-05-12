@@ -23,6 +23,13 @@ header h1 {
   margin: 0 0 8px;
 }
 
+nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .auth-grid,
 .app-grid {
   display: grid;
@@ -59,6 +66,11 @@ form {
   gap: 10px;
 }
 
+.form-section {
+  display: grid;
+  gap: 10px;
+}
+
 input,
 select,
 button {
@@ -85,6 +97,29 @@ button.danger {
   background: #dc2626;
 }
 
+.nav-button,
+.small-button {
+  width: auto;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.nav-button {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.nav-button.active {
+  background: white;
+  color: #16324f;
+}
+
+.narrow-card {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .list {
   display: grid;
   gap: 10px;
@@ -97,6 +132,32 @@ button.danger {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fbfdff;
+}
+
+.subscription-paid {
+  background: #8ef2b8;
+  border-color: #4ceb86;
+}
+
+.subscription-due-soon {
+  background: #f7e189;
+  border-color: #e8cc5b;
+}
+
+.subscription-overdue {
+  background: #f49696;
+  border-color: #f97070;
+}
+
+.status-label {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .actions {

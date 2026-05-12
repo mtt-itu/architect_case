@@ -8,7 +8,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PaymentsController(AppDbContext db, MockPaymentService paymentService) : ControllerBase
+public class PaymentsController(AppDbContext db, DebtService debtService, MockPaymentService paymentService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Payment>>> GetAll()
@@ -27,30 +27,49 @@ public class PaymentsController(AppDbContext db, MockPaymentService paymentServi
     }
 
     [HttpGet("customer/{customerId:int}")]
-    public async Task<ActionResult<List<Payment>>> GetByCustomer(int customerId)
+    public async Task<ActionResult<List<CustomerPaymentResponse>>> GetByCustomer(int customerId)
     {
         return await db.Payments
             .AsNoTracking()
             .Where(x => x.Subscription != null && x.Subscription.CustomerId == customerId)
             .OrderByDescending(x => x.PaymentDate)
+            .Select(x => new CustomerPaymentResponse(
+                x.Id,
+                x.SubscriptionId,
+                x.Subscription!.Type,
+                x.Subscription.ProviderName,
+                x.Subscription.SubscriberNumber,
+                x.Amount,
+                x.PaymentDate,
+                x.Period,
+                x.Status))
             .ToListAsync();
     }
 
     [HttpPost]
     public async Task<ActionResult<Payment>> Create(CreatePaymentRequest request)
     {
-        var subscriptionExists = await db.Subscriptions.AnyAsync(x => x.Id == request.SubscriptionId);
-        if (!subscriptionExists)
+        var subscription = await db.Subscriptions
+            .Include(x => x.Payments)
+            .FirstOrDefaultAsync(x => x.Id == request.SubscriptionId);
+
+        if (subscription is null)
         {
             return BadRequest("Subscription not found.");
         }
 
-        var isSuccessful = paymentService.Pay(request.Amount);
+        var debt = debtService.QueryDebt(subscription);
+        if (!debt.HasDebt)
+        {
+            return BadRequest(debt.Message);
+        }
+
+        var isSuccessful = paymentService.Pay(debt.Amount);
         var payment = new Payment
         {
             SubscriptionId = request.SubscriptionId,
-            Amount = request.Amount,
-            Period = request.Period,
+            Amount = debt.Amount,
+            Period = debt.Period,
             PaymentDate = DateTime.UtcNow,
             Status = isSuccessful ? PaymentStatus.Successful : PaymentStatus.Failed
         };
@@ -63,3 +82,14 @@ public class PaymentsController(AppDbContext db, MockPaymentService paymentServi
 }
 
 public record CreatePaymentRequest(int SubscriptionId, decimal Amount, string Period);
+
+public record CustomerPaymentResponse(
+    int Id,
+    int SubscriptionId,
+    SubscriptionType SubscriptionType,
+    string ProviderName,
+    string SubscriberNumber,
+    decimal Amount,
+    DateTime PaymentDate,
+    string Period,
+    PaymentStatus Status);

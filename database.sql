@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS Subscriptions (
   ProviderName VARCHAR(120) NOT NULL,
   SubscriberNumber VARCHAR(80) NOT NULL,
   Status INT NOT NULL,
-  PaymentDueDay INT NOT NULL DEFAULT 10,
+  BillingDay INT NOT NULL DEFAULT 1,
+  PreferredPaymentDay INT NOT NULL DEFAULT 10,
   CONSTRAINT FK_Subscriptions_Customers FOREIGN KEY (CustomerId)
     REFERENCES Customers(Id) ON DELETE CASCADE
 );

@@ -12,7 +12,12 @@
       <h1>Abonelik ve Odeme Hatirlatma</h1>
       <p>Musteri girisi ile abonelik ve odeme takibi.</p>
     </div>
-    <button id="logoutButton" class="secondary hidden">Cikis Yap</button>
+    <nav id="mainNav" class="hidden">
+      <button id="homeNav" class="nav-button">Ana Sayfa</button>
+      <button id="profileNav" class="nav-button">Profil</button>
+      <button id="addSubscriptionNav" class="nav-button">Abonelik Ekle</button>
+      <button id="logoutButton" class="nav-button danger">Cikis Yap</button>
+    </nav>
   </header>
 
   <main>
@@ -39,48 +44,20 @@
       </div>
     </section>
 
-    <section id="appPanel" class="hidden app-grid">
-      <section class="card">
-        <h2>Profil</h2>
-        <form id="profileForm">
-          <input id="profileName" placeholder="Ad Soyad" required>
-          <input id="profileEmail" placeholder="Email" type="email" required>
-          <input id="profilePhone" placeholder="Telefon" required>
-          <input id="profileUsername" placeholder="Kullanici adi" required>
-          <input id="profilePassword" placeholder="Yeni sifre (opsiyonel)" type="password">
-          <button type="submit">Profili Guncelle</button>
-        </form>
-      </section>
-
-      <section class="card">
+    <section id="appPanel" class="hidden">
+      <section id="homePage" class="app-grid page-section">
+      <section class="card wide">
         <div class="section-title">
-          <h2>Odenmemisler</h2>
-          <button id="refreshReminders" class="secondary">Kontrol Et</button>
+          <h2>Bildirimler</h2>
+          <button id="refreshReminders" class="secondary small-button">Kontrol Et</button>
         </div>
         <div id="reminders" class="muted">Aktif musteri girisi bekleniyor.</div>
-      </section>
-
-      <section class="card">
-        <h2>Abonelik Ekle</h2>
-        <form id="subscriptionForm">
-          <select id="subscriptionType" required>
-            <option value="1">Elektrik</option>
-            <option value="2">Su</option>
-            <option value="3">Internet</option>
-            <option value="4">GSM</option>
-            <option value="5">Diger</option>
-          </select>
-          <input id="providerName" placeholder="Hizmet saglayici" required>
-          <input id="subscriberNumber" placeholder="Abonelik / musteri no" required>
-          <input id="paymentDueDay" type="number" min="1" max="28" value="10" required>
-          <button type="submit">Kaydet</button>
-        </form>
       </section>
 
       <section class="card wide">
         <div class="section-title">
           <h2>Aboneliklerim</h2>
-          <button id="refreshSubscriptions" class="secondary">Yenile</button>
+          <button id="refreshSubscriptions" class="secondary small-button">Yenile</button>
         </div>
         <div id="subscriptions"></div>
       </section>
@@ -88,9 +65,49 @@
       <section class="card wide">
         <div class="section-title">
           <h2>Odeme Gecmisim</h2>
-          <button id="refreshPayments" class="secondary">Yenile</button>
+          <button id="refreshPayments" class="secondary small-button">Yenile</button>
         </div>
         <div id="payments"></div>
+      </section>
+      </section>
+
+      <section id="profilePage" class="app-grid page-section hidden">
+        <section class="card wide narrow-card">
+          <h2>Profil Bilgileri</h2>
+          <p class="muted">Musteri bilgilerini ve dilersen sifreni buradan guncelleyebilirsin.</p>
+          <form id="profileForm">
+            <input id="profileName" placeholder="Ad Soyad" required>
+            <input id="profileEmail" placeholder="Email" type="email" required>
+            <input id="profilePhone" placeholder="Telefon" required>
+            <input id="profileUsername" placeholder="Kullanici adi" required>
+            <input id="profilePassword" placeholder="Yeni sifre (opsiyonel)" type="password">
+            <button type="submit">Profili Guncelle</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="addSubscriptionPage" class="app-grid page-section hidden">
+        <section class="card wide narrow-card">
+          <h2>Abonelik Ekle</h2>
+          <p class="muted">Duzenli odedigin hizmet icin abonelik kaydi olustur.</p>
+          <form id="subscriptionForm">
+            <select id="subscriptionType" required>
+              <option value="1">Elektrik</option>
+              <option value="2">Su</option>
+              <option value="3">Internet</option>
+              <option value="4">GSM</option>
+              <option value="5">Diger</option>
+            </select>
+            <input id="providerName" placeholder="Hizmet saglayici" required>
+            <input id="subscriberNumber" placeholder="Abonelik / musteri no" required>
+            <button id="validateSubscriptionButton" type="button" class="secondary">Aboneligi Kontrol Et</button>
+            <div id="subscriptionValidationResult" class="muted"></div>
+            <div id="paymentPreferenceFields" class="hidden form-section">
+              <input id="preferredPaymentDay" type="number" min="1" max="28" value="10" placeholder="Her ay odemek istediginiz gun" required>
+              <button type="submit">Aboneligi Kaydet</button>
+            </div>
+          </form>
+        </section>
       </section>
     </section>
   </main>
