@@ -12,4 +12,10 @@ public class RemindersController(ReminderService reminderService) : ControllerBa
     {
         return Ok(await reminderService.GetUnpaidSubscriptionsAsync(customerId));
     }
+
+    [HttpPost("customer/{customerId:int}/send-sms")]
+    public async Task<IActionResult> SendSmsForCustomer(int customerId)
+    {
+        return Ok(await reminderService.SendSmsRemindersAsync(customerId));
+    }
 }

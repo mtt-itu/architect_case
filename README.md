@@ -90,6 +90,7 @@ http://localhost:5041/swagger
 - `GET /api/payments/subscription/{subscriptionId}`
 - `GET /api/payments/customer/{customerId}`
 - `GET /api/reminders/customer/{customerId}`
+- `POST /api/reminders/customer/{customerId}/send-sms` ödeme gününden bir gün önce mock SMS hatırlatması döndürür
 - `GET /api/test-date`
 - `POST /api/test-date` admin kullanıcının test tarihini ayarlamasını sağlar
 - `DELETE /api/test-date` admin kullanıcının test tarihini gerçek tarihe döndürmesini sağlar
@@ -116,6 +117,12 @@ WHERE Username = 'admin_kullanici_adi';
 - `DebtService`: Abonelik bilgilerine göre dönemsel borç üretir.
 - `MockPaymentService`: Ödeme sonucunu mock olarak başarılı veya başarısız döndürür.
 - `ReminderService`: Aktif ve bu ay ödenmemiş abonelikleri listeler.
+
+## AI Kullanımı
+
+Bu projenin geliştirme sürecinde yapay zekadan kod üretimi, hata ayıklama ve proje yapısını düzenleme konularında destek alınmıştır. Backend API uçlarının oluşturulması, frontend ekranlarının geliştirilmesi, statik dosya servis yapısının düzenlenmesi, ödeme/borç/hatırlatma akışlarının kodlanması ve hata senaryolarının analiz edilmesi AI desteğiyle gerçekleştirilmiştir.
+
+Proje adım adım geliştirilirken genel işleyiş, gereksinimlerin yorumlanması, senaryoların doğrulanması ve manuel testler tarafımdan yapılmıştır. Müşteri girişi, abonelik oluşturma, borç sorgulama, ödeme yapma, bildirim/SMS hatırlatma akışları ve admin işlemleri uygulama üzerinden manuel olarak test edilmiştir. AI çıktıları doğrudan kabul edilmeden önce proje ihtiyaçlarına göre kontrol edilmiş, çalışan senaryolara göre düzenlenmiş ve son kararlar geliştirici tarafından verilmiştir.
 
 ## Diyagramlar
 

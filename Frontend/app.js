@@ -140,6 +140,7 @@ function fillProfileForm() {
 
 async function loadDashboard() {
   await Promise.all([loadSubscriptions(), loadPayments(), loadReminders()]);
+  await sendSmsRemindersIfNeeded();
 }
 
 async function loadSubscriptions() {
@@ -216,11 +217,30 @@ function compareSubscriptions(a, b, sort) {
   return a.status.rank - b.status.rank || a.subscription.preferredPaymentDay - b.subscription.preferredPaymentDay;
 }
 
+function getDaysInMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function getCurrentBillingCycle(today, subscription) {
+  const currentBillingDay = Math.min(subscription.billingDay, getDaysInMonth(today.getFullYear(), today.getMonth()));
+  const periodMonth = today.getDate() >= currentBillingDay
+    ? new Date(today.getFullYear(), today.getMonth(), 1)
+    : new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const paymentMonth = subscription.preferredPaymentDay >= subscription.billingDay
+    ? new Date(periodMonth.getFullYear(), periodMonth.getMonth(), 1)
+    : new Date(periodMonth.getFullYear(), periodMonth.getMonth() + 1, 1);
+  const paymentDay = Math.min(subscription.preferredPaymentDay, getDaysInMonth(paymentMonth.getFullYear(), paymentMonth.getMonth()));
+  const paymentDate = new Date(paymentMonth.getFullYear(), paymentMonth.getMonth(), paymentDay);
+  const period = `${periodMonth.getFullYear()}-${String(periodMonth.getMonth() + 1).padStart(2, "0")}`;
+
+  return { period, paymentDate };
+}
+
 function getSubscriptionStatus(subscription, payments) {
   const today = getActiveDate();
-  const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const cycle = getCurrentBillingCycle(today, subscription);
   const paidThisMonth = payments.some(payment =>
-    payment.subscriptionId === subscription.id && payment.period === period && payment.status === 1);
+    payment.subscriptionId === subscription.id && payment.period === cycle.period && payment.status === 1);
 
   if (subscription.status !== 1) {
     return { className: "subscription-passive", label: "Pasif abonelik", rank: 5 };
@@ -230,9 +250,8 @@ function getSubscriptionStatus(subscription, payments) {
     return { className: "subscription-paid", label: "Bu ay ödendi", rank: 4 };
   }
 
-  const dueDate = new Date(today.getFullYear(), today.getMonth(), subscription.preferredPaymentDay);
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const daysUntilPayment = Math.ceil((dueDate - startOfToday) / 86400000);
+  const daysUntilPayment = Math.ceil((cycle.paymentDate - startOfToday) / 86400000);
 
   if (daysUntilPayment <= 0) {
     return { className: "subscription-overdue", label: daysUntilPayment === 0 ? "Ödeme günü bugün" : "Ödeme günü geçti", rank: 1 };
@@ -340,6 +359,37 @@ function getReminderMessage(item) {
   }
 
   return `Ödeme gününe ${item.daysUntilPayment} gün kaldı.`;
+}
+
+async function sendSmsRemindersIfNeeded() {
+  const activeDate = appDateInfo?.activeDate || new Date().toISOString().slice(0, 10);
+  const result = await request(`/reminders/customer/${currentCustomer.id}/send-sms`, { method: "POST" });
+
+  if (result.sentCount === 0) {
+    return;
+  }
+
+  const pendingItems = result.items.filter(item => {
+    const storageKey = `sms-reminder:${currentCustomer.id}:${activeDate}:${item.subscriptionId}`;
+    return !sessionStorage.getItem(storageKey);
+  });
+
+  if (pendingItems.length === 0) {
+    return;
+  }
+
+  pendingItems.forEach(item => {
+    const storageKey = `sms-reminder:${currentCustomer.id}:${activeDate}:${item.subscriptionId}`;
+    sessionStorage.setItem(storageKey, "sent");
+  });
+
+  const details = pendingItems
+    .map(item => `${item.providerName} (${item.subscriberNumber}): ${item.message}`)
+    .join("\n");
+  const message = pendingItems.length === 1
+    ? "1 SMS hatırlatması gönderildi."
+    : `${pendingItems.length} SMS hatırlatması gönderildi.`;
+  alert(`SMS Hatırlatma\n${message}\n\n${details}`);
 }
 
 async function queryDebt(subscriptionId) {
@@ -590,7 +640,7 @@ document.querySelector("#subscriptionForm").addEventListener("submit", async eve
   document.querySelector("#preferredPaymentDay").value = 10;
   resetSubscriptionValidation();
   showPage("home");
-  await Promise.all([loadSubscriptions(), loadReminders()]);
+  await loadDashboard();
 });
 
 document.querySelector("#validateSubscriptionButton").addEventListener("click", () => validateSubscription().catch(error => alert(error.message)));
