@@ -8,7 +8,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PaymentsController(AppDbContext db, DebtService debtService, MockPaymentService paymentService) : ControllerBase
+public class PaymentsController(AppDbContext db, DebtService debtService, MockPaymentService paymentService, AppDateService appDateService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Payment>>> GetAll()
@@ -47,7 +47,7 @@ public class PaymentsController(AppDbContext db, DebtService debtService, MockPa
     }
 
     [HttpPost]
-    public async Task<ActionResult<Payment>> Create(CreatePaymentRequest request)
+    public async Task<ActionResult<CreatePaymentResponse>> Create(CreatePaymentRequest request)
     {
         var subscription = await db.Subscriptions
             .Include(x => x.Payments)
@@ -64,24 +64,44 @@ public class PaymentsController(AppDbContext db, DebtService debtService, MockPa
             return BadRequest(debt.Message);
         }
 
-        var isSuccessful = paymentService.Pay(debt.Amount);
+        var paymentResult = paymentService.Pay(debt.Amount);
         var payment = new Payment
         {
             SubscriptionId = request.SubscriptionId,
             Amount = debt.Amount,
             Period = debt.Period,
-            PaymentDate = DateTime.UtcNow,
-            Status = isSuccessful ? PaymentStatus.Successful : PaymentStatus.Failed
+            PaymentDate = appDateService.Now,
+            Status = paymentResult.IsSuccessful ? PaymentStatus.Successful : PaymentStatus.Failed
         };
 
         db.Payments.Add(payment);
         await db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetBySubscription), new { subscriptionId = payment.SubscriptionId }, payment);
+        var response = new CreatePaymentResponse(
+            payment.Id,
+            payment.SubscriptionId,
+            payment.Amount,
+            payment.Period,
+            payment.PaymentDate,
+            payment.Status,
+            paymentResult.IsSuccessful,
+            paymentResult.Message);
+
+        return CreatedAtAction(nameof(GetBySubscription), new { subscriptionId = payment.SubscriptionId }, response);
     }
 }
 
 public record CreatePaymentRequest(int SubscriptionId, decimal Amount, string Period);
+
+public record CreatePaymentResponse(
+    int PaymentId,
+    int SubscriptionId,
+    decimal Amount,
+    string Period,
+    DateTime PaymentDate,
+    PaymentStatus Status,
+    bool IsSuccessful,
+    string Message);
 
 public record CustomerPaymentResponse(
     int Id,

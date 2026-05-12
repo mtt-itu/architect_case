@@ -17,6 +17,10 @@ let currentCustomer = JSON.parse(localStorage.getItem("customer") || "null");
 let lastDebtBySubscription = {};
 let currentPage = "home";
 let validatedSubscription = null;
+let appDateInfo = null;
+let subscriptionItems = [];
+let subscriptionPayments = [];
+let paymentItems = [];
 
 async function request(path, options) {
   const response = await fetch(`${apiBase}${path}`, {
@@ -52,7 +56,7 @@ function renderSession() {
     return;
   }
 
-  showPage(currentPage);
+  refreshAppDate().then(() => showPage(currentPage)).catch(error => alert(error.message));
 }
 
 function showPage(pageName) {
@@ -77,6 +81,34 @@ function showPage(pageName) {
   if (pageName === "addSubscription") {
     resetSubscriptionValidation();
   }
+
+}
+
+async function refreshAppDate() {
+  appDateInfo = await request("/test-date");
+  renderDateBanner();
+}
+
+function getActiveDate() {
+  const source = appDateInfo?.activeDate || new Date().toISOString().slice(0, 10);
+  return new Date(`${source}T00:00:00`);
+}
+
+function renderDateBanner() {
+  renderTestDateInfo();
+}
+
+function renderTestDateInfo() {
+  const info = document.querySelector("#testDateInfo");
+  const input = document.querySelector("#testDateInput");
+  if (!appDateInfo || !info || !input) {
+    return;
+  }
+
+  info.textContent = appDateInfo.isTestMode
+    ? `Aktif tarih: ${appDateInfo.activeDate} | Gercek tarih: ${appDateInfo.realDate}`
+    : `Gercek tarih kullaniliyor: ${appDateInfo.realDate}`;
+  input.value = appDateInfo.activeDate;
 }
 
 function fillProfileForm() {
@@ -92,17 +124,34 @@ async function loadDashboard() {
 }
 
 async function loadSubscriptions() {
-  const subscriptions = await request(`/subscriptions/customer/${currentCustomer.id}`);
-  const payments = await request(`/payments/customer/${currentCustomer.id}`);
+  subscriptionItems = await request(`/subscriptions/customer/${currentCustomer.id}`);
+  subscriptionPayments = await request(`/payments/customer/${currentCustomer.id}`);
+  renderSubscriptions();
+}
+
+function renderSubscriptions() {
   const container = document.querySelector("#subscriptions");
 
-  if (subscriptions.length === 0) {
+  if (subscriptionItems.length === 0) {
     container.innerHTML = `<p class="muted">Henuz abonelik yok.</p>`;
     return;
   }
 
-  container.innerHTML = `<div class="list">${subscriptions.map(subscription => {
-    const status = getSubscriptionStatus(subscription, payments);
+  const search = document.querySelector("#subscriptionSearch").value.trim().toLowerCase();
+  const sort = document.querySelector("#subscriptionSort").value;
+  const items = subscriptionItems
+    .map(subscription => ({ subscription, status: getSubscriptionStatus(subscription, subscriptionPayments) }))
+    .filter(item => getSubscriptionSearchText(item.subscription, item.status).includes(search))
+    .sort((a, b) => compareSubscriptions(a, b, sort));
+
+  if (items.length === 0) {
+    container.innerHTML = `<p class="muted">Aramaya uygun abonelik bulunamadi.</p>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="list">${items.map(item => {
+    const subscription = item.subscription;
+    const status = item.status;
 
     return `
     <div class="row ${status.className}">
@@ -120,14 +169,45 @@ async function loadSubscriptions() {
   }).join("")}</div>`;
 }
 
+function getSubscriptionSearchText(subscription, status) {
+  return [
+    typeNames[subscription.type],
+    subscription.providerName,
+    subscription.subscriberNumber,
+    status.label,
+    subscription.billingDay,
+    subscription.preferredPaymentDay
+  ].join(" ").toLowerCase();
+}
+
+function compareSubscriptions(a, b, sort) {
+  if (sort === "paid") {
+    return (a.status.rank === 4 ? 0 : 1) - (b.status.rank === 4 ? 0 : 1) || a.subscription.providerName.localeCompare(b.subscription.providerName);
+  }
+
+  if (sort === "provider") {
+    return a.subscription.providerName.localeCompare(b.subscription.providerName);
+  }
+
+  if (sort === "preferredDay") {
+    return a.subscription.preferredPaymentDay - b.subscription.preferredPaymentDay;
+  }
+
+  if (sort === "billingDay") {
+    return a.subscription.billingDay - b.subscription.billingDay;
+  }
+
+  return a.status.rank - b.status.rank || a.subscription.preferredPaymentDay - b.subscription.preferredPaymentDay;
+}
+
 function getSubscriptionStatus(subscription, payments) {
-  const today = new Date();
+  const today = getActiveDate();
   const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   const paidThisMonth = payments.some(payment =>
     payment.subscriptionId === subscription.id && payment.period === period && payment.status === 1);
 
   if (paidThisMonth) {
-    return { className: "subscription-paid", label: "Bu ay odendi" };
+    return { className: "subscription-paid", label: "Bu ay odendi", rank: 4 };
   }
 
   const dueDate = new Date(today.getFullYear(), today.getMonth(), subscription.preferredPaymentDay);
@@ -135,32 +215,82 @@ function getSubscriptionStatus(subscription, payments) {
   const daysUntilPayment = Math.ceil((dueDate - startOfToday) / 86400000);
 
   if (daysUntilPayment <= 0) {
-    return { className: "subscription-overdue", label: daysUntilPayment === 0 ? "Odeme gunu bugun" : "Odeme gunu gecti" };
+    return { className: "subscription-overdue", label: daysUntilPayment === 0 ? "Odeme gunu bugun" : "Odeme gunu gecti", rank: 1 };
   }
 
   if (daysUntilPayment <= 7) {
-    return { className: "subscription-due-soon", label: `Odeme gunune ${daysUntilPayment} gun kaldi` };
+    return { className: "subscription-due-soon", label: `Odeme gunune ${daysUntilPayment} gun kaldi`, rank: 2 };
   }
 
-  return { className: "", label: "Odeme tarihi bekleniyor" };
+  return { className: "", label: "Odeme tarihi bekleniyor", rank: 3 };
 }
 
 async function loadPayments() {
-  const payments = await request(`/payments/customer/${currentCustomer.id}`);
+  paymentItems = await request(`/payments/customer/${currentCustomer.id}`);
+  renderPayments();
+}
+
+function renderPayments() {
   const container = document.querySelector("#payments");
 
-  if (payments.length === 0) {
+  if (paymentItems.length === 0) {
     container.innerHTML = `<p class="muted">Henuz odeme kaydi yok.</p>`;
     return;
   }
 
-  container.innerHTML = `<div class="list">${payments.map(payment => `
+  const search = document.querySelector("#paymentSearch").value.trim().toLowerCase();
+  const sort = document.querySelector("#paymentSort").value;
+  const items = paymentItems
+    .filter(payment => getPaymentSearchText(payment).includes(search))
+    .sort((a, b) => comparePayments(a, b, sort));
+
+  if (items.length === 0) {
+    container.innerHTML = `<p class="muted">Aramaya uygun odeme kaydi bulunamadi.</p>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="list">${items.map(payment => `
     <div class="row">
       <strong>${typeNames[payment.subscriptionType]} - ${payment.providerName} | ${payment.amount} TL</strong>
       <span class="muted">Abonelik No: ${payment.subscriberNumber}</span>
       <span class="muted">Donem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
     </div>
   `).join("")}</div>`;
+}
+
+function getPaymentSearchText(payment) {
+  return [
+    typeNames[payment.subscriptionType],
+    payment.providerName,
+    payment.subscriberNumber,
+    payment.period,
+    statusNames[payment.status],
+    payment.amount
+  ].join(" ").toLowerCase();
+}
+
+function comparePayments(a, b, sort) {
+  if (sort === "oldest") {
+    return new Date(a.paymentDate) - new Date(b.paymentDate);
+  }
+
+  if (sort === "amountDesc") {
+    return b.amount - a.amount;
+  }
+
+  if (sort === "amountAsc") {
+    return a.amount - b.amount;
+  }
+
+  if (sort === "successful") {
+    return (a.status === 1 ? 0 : 1) - (b.status === 1 ? 0 : 1) || new Date(b.paymentDate) - new Date(a.paymentDate);
+  }
+
+  if (sort === "failed") {
+    return (a.status === 2 ? 0 : 1) - (b.status === 2 ? 0 : 1) || new Date(b.paymentDate) - new Date(a.paymentDate);
+  }
+
+  return new Date(b.paymentDate) - new Date(a.paymentDate);
 }
 
 async function loadReminders() {
@@ -214,14 +344,14 @@ async function payDebt(subscriptionId) {
     return;
   }
 
-  await request("/payments", {
+  const paymentResult = await request("/payments", {
     method: "POST",
     body: JSON.stringify({ subscriptionId, amount: debt.amount, period: debt.period })
   });
 
   delete lastDebtBySubscription[subscriptionId];
   await Promise.all([loadSubscriptions(), loadPayments(), loadReminders()]);
-  alert("Odeme kaydi olusturuldu.");
+  alert(paymentResult.message);
 }
 
 async function deleteSubscription(id) {
@@ -353,6 +483,22 @@ document.querySelector("#homeNav").addEventListener("click", () => showPage("hom
 document.querySelector("#profileNav").addEventListener("click", () => showPage("profile"));
 document.querySelector("#addSubscriptionNav").addEventListener("click", () => showPage("addSubscription"));
 
+document.querySelector("#testDateForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  appDateInfo = await request("/test-date", {
+    method: "POST",
+    body: JSON.stringify({ date: document.querySelector("#testDateInput").value })
+  });
+  renderDateBanner();
+  await loadDashboard();
+});
+
+document.querySelector("#resetTestDateButton").addEventListener("click", async () => {
+  appDateInfo = await request("/test-date", { method: "DELETE" });
+  renderDateBanner();
+  await loadDashboard();
+});
+
 document.querySelector("#logoutButton").addEventListener("click", () => {
   localStorage.removeItem("customer");
   currentCustomer = null;
@@ -364,5 +510,9 @@ document.querySelector("#logoutButton").addEventListener("click", () => {
 document.querySelector("#refreshSubscriptions").addEventListener("click", () => loadSubscriptions().catch(error => alert(error.message)));
 document.querySelector("#refreshPayments").addEventListener("click", () => loadPayments().catch(error => alert(error.message)));
 document.querySelector("#refreshReminders").addEventListener("click", () => loadReminders().catch(error => alert(error.message)));
+document.querySelector("#subscriptionSearch").addEventListener("input", renderSubscriptions);
+document.querySelector("#subscriptionSort").addEventListener("change", renderSubscriptions);
+document.querySelector("#paymentSearch").addEventListener("input", renderPayments);
+document.querySelector("#paymentSort").addEventListener("change", renderPayments);
 
 renderSession();

@@ -1,14 +1,20 @@
 namespace Backend.Services;
 
+public record PaymentServiceResult(bool IsSuccessful, string Message);
+
 public class MockPaymentService
 {
-    public bool Pay(decimal amount)
+    public PaymentServiceResult Pay(decimal amount)
     {
         if (amount <= 0)
         {
-            return false;
+            return new PaymentServiceResult(false, "Odeme tutari gecersiz.");
         }
 
-        return Random.Shared.Next(1, 101) <= 90;
+        var isSuccessful = Random.Shared.Next(1, 101) <= 95;
+
+        return isSuccessful
+            ? new PaymentServiceResult(true, "Odeme basarili.")
+            : new PaymentServiceResult(false, "Odeme basarisiz oldu. Lutfen tekrar deneyin.");
     }
 }

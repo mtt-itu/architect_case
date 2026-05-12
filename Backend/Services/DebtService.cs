@@ -4,12 +4,12 @@ namespace Backend.Services;
 
 public record DebtResult(bool HasDebt, decimal Amount, DateOnly DueDate, string Period, string Message);
 
-public class DebtService
+public class DebtService(AppDateService appDateService)
 {
     public DebtResult QueryDebt(Subscription subscription)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var period = DateTime.Today.ToString("yyyy-MM");
+        var today = appDateService.Today;
+        var period = $"{today.Year:D4}-{today.Month:D2}";
         var billingDay = Math.Clamp(subscription.BillingDay, 1, DateTime.DaysInMonth(today.Year, today.Month));
         var billingDate = new DateOnly(today.Year, today.Month, billingDay);
 

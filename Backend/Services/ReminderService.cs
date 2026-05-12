@@ -6,12 +6,12 @@ namespace Backend.Services;
 
 public record ReminderItem(int SubscriptionId, string ProviderName, string SubscriberNumber, string Period, DateOnly DueDate, int DaysUntilPayment);
 
-public class ReminderService(AppDbContext db)
+public class ReminderService(AppDbContext db, AppDateService appDateService)
 {
     public async Task<List<ReminderItem>> GetUnpaidSubscriptionsAsync(int customerId)
     {
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var period = DateTime.Today.ToString("yyyy-MM");
+        var today = appDateService.Today;
+        var period = $"{today.Year:D4}-{today.Month:D2}";
 
         var subscriptions = await db.Subscriptions
             .Include(x => x.Payments)

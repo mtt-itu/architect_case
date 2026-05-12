@@ -23,6 +23,26 @@ header h1 {
   margin: 0 0 8px;
 }
 
+.test-date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+}
+
+.inline-form input {
+  width: auto;
+}
+
 nav {
   display: flex;
   gap: 8px;
@@ -59,6 +79,13 @@ nav {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.list-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 10px;
+  margin: 10px 0 14px;
 }
 
 form {
@@ -185,6 +212,22 @@ button.danger {
   .app-grid {
     grid-template-columns: 1fr;
     padding: 12px;
+  }
+
+  .test-date-bar,
+  .inline-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .list-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-form,
+  .inline-form input,
+  .inline-form button {
+    width: 100%;
   }
 
   .wide {

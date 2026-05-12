@@ -13,6 +13,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
+builder.Services.AddSingleton<AppDateService>();
 builder.Services.AddScoped<DebtService>();
 builder.Services.AddScoped<MockPaymentService>();
 builder.Services.AddScoped<MockSubscriptionProviderService>();

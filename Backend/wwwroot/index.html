@@ -46,6 +46,18 @@
 
     <section id="appPanel" class="hidden">
       <section id="homePage" class="app-grid page-section">
+      <section class="card wide test-date-bar">
+        <div>
+          <strong>Test Modu</strong>
+          <div id="testDateInfo" class="muted">Tarih bilgisi yukleniyor.</div>
+        </div>
+        <form id="testDateForm" class="inline-form">
+          <input id="testDateInput" type="date" required>
+          <button type="submit" class="small-button">Tarihi Uygula</button>
+          <button id="resetTestDateButton" type="button" class="secondary small-button">Gercek Tarihe Don</button>
+        </form>
+      </section>
+
       <section class="card wide">
         <div class="section-title">
           <h2>Bildirimler</h2>
@@ -59,6 +71,16 @@
           <h2>Aboneliklerim</h2>
           <button id="refreshSubscriptions" class="secondary small-button">Yenile</button>
         </div>
+        <div class="list-controls">
+          <input id="subscriptionSearch" placeholder="Abonelik ara...">
+          <select id="subscriptionSort">
+            <option value="critical">Kritik olanlar onde</option>
+            <option value="paid">Odenenler onde</option>
+            <option value="provider">Saglayici adina gore</option>
+            <option value="preferredDay">Odeme gunune gore</option>
+            <option value="billingDay">Fatura kesim gunune gore</option>
+          </select>
+        </div>
         <div id="subscriptions"></div>
       </section>
 
@@ -66,6 +88,17 @@
         <div class="section-title">
           <h2>Odeme Gecmisim</h2>
           <button id="refreshPayments" class="secondary small-button">Yenile</button>
+        </div>
+        <div class="list-controls">
+          <input id="paymentSearch" placeholder="Odeme ara...">
+          <select id="paymentSort">
+            <option value="newest">En yeni odeme</option>
+            <option value="oldest">En eski odeme</option>
+            <option value="amountDesc">Tutar yuksekten dusuge</option>
+            <option value="amountAsc">Tutar dusukten yuksege</option>
+            <option value="successful">Basarili odemeler</option>
+            <option value="failed">Basarisiz odemeler</option>
+          </select>
         </div>
         <div id="payments"></div>
       </section>
@@ -109,6 +142,7 @@
           </form>
         </section>
       </section>
+
     </section>
   </main>
 
