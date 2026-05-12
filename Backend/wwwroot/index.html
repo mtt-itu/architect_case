@@ -11,6 +11,7 @@
     <div>
       <h1>Abonelik ve Odeme Hatirlatma</h1>
       <p>Musteri girisi ile abonelik ve odeme takibi.</p>
+      <div id="customerInfo" class="customer-info hidden"></div>
     </div>
     <nav id="mainNav" class="hidden">
       <button id="homeNav" class="nav-button">Ana Sayfa</button>
@@ -115,7 +116,41 @@
             <input id="profileUsername" placeholder="Kullanici adi" required>
             <input id="profilePassword" placeholder="Yeni sifre (opsiyonel)" type="password">
             <button type="submit">Profili Guncelle</button>
+            <button id="deleteAccountButton" type="button" class="danger">Hesabimi Sil</button>
           </form>
+        </section>
+      </section>
+
+      <section id="subscriptionDetailPage" class="app-grid page-section hidden">
+        <section class="card wide">
+          <div class="section-title">
+            <h2>Abonelik Detayi</h2>
+            <button id="backToHomeButton" class="secondary small-button">Ana Sayfaya Don</button>
+          </div>
+          <div id="subscriptionDetail"></div>
+        </section>
+
+        <section class="card wide">
+          <h2>Abonelik Guncelle</h2>
+          <form id="editSubscriptionForm">
+            <select id="editSubscriptionType" required>
+              <option value="1">Elektrik</option>
+              <option value="2">Su</option>
+              <option value="3">Internet</option>
+              <option value="4">GSM</option>
+              <option value="5">Diger</option>
+            </select>
+            <input id="editProviderName" placeholder="Hizmet saglayici" required>
+            <input id="editSubscriberNumber" placeholder="Abonelik / musteri no" required>
+            <label for="editPreferredPaymentDay">Her ayin hangi gununde odemek istiyorsunuz?</label>
+            <input id="editPreferredPaymentDay" type="number" min="1" max="28" required>
+            <button type="submit">Aboneligi Guncelle</button>
+          </form>
+        </section>
+
+        <section class="card wide">
+          <h2>Bu Aboneligin Odeme Gecmisi</h2>
+          <div id="subscriptionPaymentHistory"></div>
         </section>
       </section>
 
@@ -136,7 +171,8 @@
             <button id="validateSubscriptionButton" type="button" class="secondary">Aboneligi Kontrol Et</button>
             <div id="subscriptionValidationResult" class="muted"></div>
             <div id="paymentPreferenceFields" class="hidden form-section">
-              <input id="preferredPaymentDay" type="number" min="1" max="28" value="10" placeholder="Her ay odemek istediginiz gun" required>
+              <label for="preferredPaymentDay">Her ayin hangi gununde odemek istiyorsunuz?</label>
+              <input id="preferredPaymentDay" type="number" min="1" max="28" value="10" placeholder="Ornek: 15" required>
               <button type="submit">Aboneligi Kaydet</button>
             </div>
           </form>

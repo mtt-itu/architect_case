@@ -21,6 +21,7 @@ let appDateInfo = null;
 let subscriptionItems = [];
 let subscriptionPayments = [];
 let paymentItems = [];
+let selectedSubscriptionId = null;
 
 async function request(path, options) {
   const response = await fetch(`${apiBase}${path}`, {
@@ -51,12 +52,18 @@ function renderSession() {
   document.querySelector("#authPanel").classList.toggle("hidden", isLoggedIn);
   document.querySelector("#appPanel").classList.toggle("hidden", !isLoggedIn);
   document.querySelector("#mainNav").classList.toggle("hidden", !isLoggedIn);
+  document.querySelector("#customerInfo").classList.toggle("hidden", !isLoggedIn);
 
   if (!isLoggedIn) {
     return;
   }
 
+  renderCustomerInfo();
   refreshAppDate().then(() => showPage(currentPage)).catch(error => alert(error.message));
+}
+
+function renderCustomerInfo() {
+  document.querySelector("#customerInfo").textContent = `${currentCustomer.fullName} | ${currentCustomer.username} | ${currentCustomer.email}`;
 }
 
 function showPage(pageName) {
@@ -80,6 +87,10 @@ function showPage(pageName) {
 
   if (pageName === "addSubscription") {
     resetSubscriptionValidation();
+  }
+
+  if (pageName === "subscriptionDetail") {
+    renderSubscriptionDetail();
   }
 
 }
@@ -156,13 +167,10 @@ function renderSubscriptions() {
     return `
     <div class="row ${status.className}">
       <strong>${typeNames[subscription.type]} - ${subscription.providerName}</strong>
-      <span class="muted">No: ${subscription.subscriberNumber} | Fatura kesim gunu: ${subscription.billingDay} | Odeme tercihi: Her ayin ${subscription.preferredPaymentDay}. gunu</span>
+      <span class="muted">No: ${subscription.subscriberNumber} | Durum: ${subscription.status === 1 ? "Aktif" : "Pasif"} | Fatura kesim gunu: ${subscription.billingDay} | Odeme tercihi: Her ayin ${subscription.preferredPaymentDay}. gunu</span>
       <span class="status-label">${status.label}</span>
-      <div id="debt-${subscription.id}" class="muted"></div>
       <div class="actions">
-        <button onclick="queryDebt(${subscription.id})">Borc Sorgula</button>
-        <button class="secondary" onclick="payDebt(${subscription.id})">Ode</button>
-        <button class="danger" onclick="deleteSubscription(${subscription.id})">Sil</button>
+        <button onclick="openSubscriptionDetail(${subscription.id})">Detay</button>
       </div>
     </div>
   `;
@@ -205,6 +213,10 @@ function getSubscriptionStatus(subscription, payments) {
   const period = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
   const paidThisMonth = payments.some(payment =>
     payment.subscriptionId === subscription.id && payment.period === period && payment.status === 1);
+
+  if (subscription.status !== 1) {
+    return { className: "subscription-passive", label: "Pasif abonelik", rank: 5 };
+  }
 
   if (paidThisMonth) {
     return { className: "subscription-paid", label: "Bu ay odendi", rank: 4 };
@@ -324,15 +336,20 @@ function getReminderMessage(item) {
 
 async function queryDebt(subscriptionId) {
   const debt = await request(`/debts/subscription/${subscriptionId}`);
+  const target = document.querySelector(`#debt-${subscriptionId}`);
 
   if (!debt.hasDebt) {
     delete lastDebtBySubscription[subscriptionId];
-    document.querySelector(`#debt-${subscriptionId}`).textContent = debt.message;
+    if (target) {
+      target.textContent = debt.message;
+    }
     return debt;
   }
 
   lastDebtBySubscription[subscriptionId] = debt;
-  document.querySelector(`#debt-${subscriptionId}`).textContent = `Borc: ${debt.amount} TL | Fatura kesim gunu: ${debt.dueDate} | Donem: ${debt.period}`;
+  if (target) {
+    target.textContent = `Borc: ${debt.amount} TL | Fatura kesim gunu: ${debt.dueDate} | Donem: ${debt.period}`;
+  }
   return debt;
 }
 
@@ -351,12 +368,86 @@ async function payDebt(subscriptionId) {
 
   delete lastDebtBySubscription[subscriptionId];
   await Promise.all([loadSubscriptions(), loadPayments(), loadReminders()]);
+  if (currentPage === "subscriptionDetail") {
+    renderSubscriptionDetail();
+  }
   alert(paymentResult.message);
 }
 
 async function deleteSubscription(id) {
+  if (!confirm("Bu aboneligi silmek istediginize emin misiniz?")) {
+    return;
+  }
+
   await request(`/subscriptions/${id}`, { method: "DELETE" });
+  selectedSubscriptionId = null;
+  showPage("home");
   await Promise.all([loadSubscriptions(), loadPayments(), loadReminders()]);
+}
+
+function openSubscriptionDetail(subscriptionId) {
+  selectedSubscriptionId = subscriptionId;
+  showPage("subscriptionDetail");
+}
+
+function getSelectedSubscription() {
+  return subscriptionItems.find(subscription => subscription.id === selectedSubscriptionId) || null;
+}
+
+function renderSubscriptionDetail() {
+  const subscription = getSelectedSubscription();
+  const detail = document.querySelector("#subscriptionDetail");
+  const history = document.querySelector("#subscriptionPaymentHistory");
+
+  if (!subscription) {
+    detail.innerHTML = `<p class="muted">Abonelik bulunamadi.</p>`;
+    history.innerHTML = "";
+    return;
+  }
+
+  const status = getSubscriptionStatus(subscription, subscriptionPayments);
+  document.querySelector("#editSubscriptionType").value = subscription.type;
+  document.querySelector("#editProviderName").value = subscription.providerName;
+  document.querySelector("#editSubscriberNumber").value = subscription.subscriberNumber;
+  document.querySelector("#editPreferredPaymentDay").value = subscription.preferredPaymentDay;
+
+  detail.innerHTML = `
+    <div class="row ${status.className}">
+      <strong>${typeNames[subscription.type]} - ${subscription.providerName}</strong>
+      <span class="muted">Abonelik No: ${subscription.subscriberNumber}</span>
+      <span class="muted">Durum: ${subscription.status === 1 ? "Aktif" : "Pasif"}</span>
+      <span class="muted">Fatura kesim gunu: Her ayin ${subscription.billingDay}. gunu</span>
+      <span class="muted">Odeme tercihi: Her ayin ${subscription.preferredPaymentDay}. gunu</span>
+      <span class="status-label">${status.label}</span>
+      <div id="debt-${subscription.id}" class="muted"></div>
+      <div class="actions">
+        <button ${subscription.status !== 1 ? "disabled" : ""} onclick="queryDebt(${subscription.id})">Borc Sorgula</button>
+        <button ${subscription.status !== 1 ? "disabled" : ""} class="secondary" onclick="payDebt(${subscription.id})">Ode</button>
+        <button class="secondary" onclick="toggleSubscriptionStatus(${subscription.id}, ${subscription.status === 1 ? 2 : 1})">${subscription.status === 1 ? "Pasife Al" : "Aktif Et"}</button>
+        <button class="danger" onclick="deleteSubscription(${subscription.id})">Sil</button>
+      </div>
+    </div>
+  `;
+
+  const payments = paymentItems.filter(payment => payment.subscriptionId === subscription.id);
+  history.innerHTML = payments.length === 0
+    ? `<p class="muted">Bu abonelige ait odeme kaydi yok.</p>`
+    : `<div class="list">${payments.map(payment => `
+      <div class="row">
+        <strong>${payment.amount} TL</strong>
+        <span class="muted">Donem: ${payment.period} | Durum: ${statusNames[payment.status]} | Tarih: ${new Date(payment.paymentDate).toLocaleString("tr-TR")}</span>
+      </div>
+    `).join("")}</div>`;
+}
+
+async function toggleSubscriptionStatus(subscriptionId, status) {
+  await request(`/subscriptions/${subscriptionId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status })
+  });
+
+  await Promise.all([loadSubscriptions(), loadReminders()]);
+  renderSubscriptionDetail();
 }
 
 function getSubscriptionFormValues() {
@@ -443,6 +534,43 @@ document.querySelector("#profileForm").addEventListener("submit", async event =>
   alert("Profil guncellendi.");
 });
 
+document.querySelector("#deleteAccountButton").addEventListener("click", async () => {
+  if (!confirm("Hesabinizi silmek istediginize emin misiniz? Tum abonelik ve odeme kayitlari silinir.")) {
+    return;
+  }
+
+  await request(`/customers/${currentCustomer.id}`, { method: "DELETE" });
+  localStorage.removeItem("customer");
+  currentCustomer = null;
+  lastDebtBySubscription = {};
+  selectedSubscriptionId = null;
+  currentPage = "home";
+  renderSession();
+});
+
+document.querySelector("#editSubscriptionForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const subscription = getSelectedSubscription();
+  if (!subscription) {
+    return;
+  }
+
+  await request(`/subscriptions/${subscription.id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      type: Number(document.querySelector("#editSubscriptionType").value),
+      providerName: document.querySelector("#editProviderName").value,
+      subscriberNumber: document.querySelector("#editSubscriberNumber").value,
+      status: subscription.status,
+      preferredPaymentDay: Number(document.querySelector("#editPreferredPaymentDay").value)
+    })
+  });
+
+  await Promise.all([loadSubscriptions(), loadReminders()]);
+  renderSubscriptionDetail();
+  alert("Abonelik guncellendi.");
+});
+
 document.querySelector("#subscriptionForm").addEventListener("submit", async event => {
   event.preventDefault();
   const currentFormValues = getSubscriptionFormValues();
@@ -482,6 +610,7 @@ document.querySelector("#subscriberNumber").addEventListener("input", resetSubsc
 document.querySelector("#homeNav").addEventListener("click", () => showPage("home"));
 document.querySelector("#profileNav").addEventListener("click", () => showPage("profile"));
 document.querySelector("#addSubscriptionNav").addEventListener("click", () => showPage("addSubscription"));
+document.querySelector("#backToHomeButton").addEventListener("click", () => showPage("home"));
 
 document.querySelector("#testDateForm").addEventListener("submit", async event => {
   event.preventDefault();

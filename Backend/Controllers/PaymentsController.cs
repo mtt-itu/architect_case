@@ -58,13 +58,18 @@ public class PaymentsController(AppDbContext db, DebtService debtService, MockPa
             return BadRequest("Subscription not found.");
         }
 
+        if (subscription.Status != SubscriptionStatus.Active)
+        {
+            return BadRequest("Pasif abonelik icin odeme yapilamaz.");
+        }
+
         var debt = debtService.QueryDebt(subscription);
         if (!debt.HasDebt)
         {
             return BadRequest(debt.Message);
         }
 
-        var paymentResult = paymentService.Pay(debt.Amount);
+        var paymentResult = await paymentService.PayAsync(debt.Amount);
         var payment = new Payment
         {
             SubscriptionId = request.SubscriptionId,

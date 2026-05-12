@@ -1,20 +1,22 @@
+using System.Net.Http.Json;
+
 namespace Backend.Services;
 
 public record PaymentServiceResult(bool IsSuccessful, string Message);
+public record MockPaymentRequest(decimal Amount);
 
-public class MockPaymentService
+public class MockPaymentService(HttpClient httpClient)
 {
-    public PaymentServiceResult Pay(decimal amount)
+    public async Task<PaymentServiceResult> PayAsync(decimal amount)
     {
-        if (amount <= 0)
+        var response = await httpClient.PostAsJsonAsync("api/mock-payment-provider/pay", new MockPaymentRequest(amount));
+        var result = await response.Content.ReadFromJsonAsync<PaymentServiceResult>();
+
+        if (result is not null)
         {
-            return new PaymentServiceResult(false, "Odeme tutari gecersiz.");
+            return result;
         }
 
-        var isSuccessful = Random.Shared.Next(1, 101) <= 95;
-
-        return isSuccessful
-            ? new PaymentServiceResult(true, "Odeme basarili.")
-            : new PaymentServiceResult(false, "Odeme basarisiz oldu. Lutfen tekrar deneyin.");
+        return new PaymentServiceResult(false, "Odeme servisi cevap vermedi.");
     }
 }

@@ -1,26 +1,28 @@
+using System.Net.Http.Json;
 using Backend.Models;
 
 namespace Backend.Services;
 
 public record SubscriptionValidationResult(bool IsValid, int BillingDay, string Message);
+public record MockSubscriptionValidationRequest(
+    SubscriptionType Type,
+    string ProviderName,
+    string SubscriberNumber);
 
-public class MockSubscriptionProviderService
+public class MockSubscriptionProviderService(HttpClient httpClient)
 {
-    public SubscriptionValidationResult Validate(SubscriptionType type, string providerName, string subscriberNumber)
+    public async Task<SubscriptionValidationResult> ValidateAsync(SubscriptionType type, string providerName, string subscriberNumber)
     {
-        if (string.IsNullOrWhiteSpace(providerName) || string.IsNullOrWhiteSpace(subscriberNumber))
+        var response = await httpClient.PostAsJsonAsync(
+            "api/mock-subscription-provider/validate",
+            new MockSubscriptionValidationRequest(type, providerName, subscriberNumber));
+        var result = await response.Content.ReadFromJsonAsync<SubscriptionValidationResult>();
+
+        if (result is not null)
         {
-            return new SubscriptionValidationResult(false, 0, "Abonelik bilgileri eksik.");
+            return result;
         }
 
-        if (subscriberNumber.Trim().Length < 4)
-        {
-            return new SubscriptionValidationResult(false, 0, "Abonelik numarasi en az 4 karakter olmali.");
-        }
-
-        var seed = Math.Abs(HashCode.Combine(type, providerName.Trim().ToLowerInvariant(), subscriberNumber.Trim()));
-        var billingDay = 1 + seed % 28;
-
-        return new SubscriptionValidationResult(true, billingDay, "Abonelik dogrulandi.");
+        return new SubscriptionValidationResult(false, 0, "Abonelik servisi cevap vermedi.");
     }
 }

@@ -23,6 +23,13 @@ header h1 {
   margin: 0 0 8px;
 }
 
+.customer-info {
+  margin-top: 10px;
+  color: #dbeafe;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .test-date-bar {
   display: flex;
   align-items: center;
@@ -100,12 +107,23 @@ form {
 
 input,
 select,
-button {
+button,
+label {
   width: 100%;
   padding: 10px;
+  font-size: 14px;
+}
+
+input,
+select,
+button {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 14px;
+}
+
+label {
+  padding: 0;
+  font-weight: 700;
 }
 
 button {
@@ -122,6 +140,11 @@ button.secondary {
 
 button.danger {
   background: #dc2626;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .nav-button,
@@ -174,6 +197,11 @@ button.danger {
 .subscription-overdue {
   background: #f49696;
   border-color: #f97070;
+}
+
+.subscription-passive {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
 }
 
 .status-label {

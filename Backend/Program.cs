@@ -15,8 +15,9 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSingleton<AppDateService>();
 builder.Services.AddScoped<DebtService>();
-builder.Services.AddScoped<MockPaymentService>();
-builder.Services.AddScoped<MockSubscriptionProviderService>();
+var thirdPartyBaseUrl = builder.Configuration["ThirdPartyServices:BaseUrl"] ?? "http://localhost:5041/";
+builder.Services.AddHttpClient<MockPaymentService>(client => client.BaseAddress = new Uri(thirdPartyBaseUrl));
+builder.Services.AddHttpClient<MockSubscriptionProviderService>(client => client.BaseAddress = new Uri(thirdPartyBaseUrl));
 builder.Services.AddScoped<ReminderService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

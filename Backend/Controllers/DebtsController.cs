@@ -1,4 +1,5 @@
 using Backend.Data;
+using Backend.Models;
 using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DebtsController(AppDbContext db, DebtService debtService) : ControllerBase
+public class DebtsController(AppDbContext db, DebtService debtService, AppDateService appDateService) : ControllerBase
 {
     [HttpGet("subscription/{subscriptionId:int}")]
     public async Task<IActionResult> QueryDebt(int subscriptionId)
@@ -19,6 +20,12 @@ public class DebtsController(AppDbContext db, DebtService debtService) : Control
         if (subscription is null)
         {
             return NotFound();
+        }
+
+        if (subscription.Status != SubscriptionStatus.Active)
+        {
+            var today = appDateService.Today;
+            return Ok(new DebtResult(false, 0, today, $"{today.Year:D4}-{today.Month:D2}", "Pasif abonelik icin borc sorgulanamaz."));
         }
 
         return Ok(debtService.QueryDebt(subscription));

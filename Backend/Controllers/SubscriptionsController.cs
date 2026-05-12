@@ -41,7 +41,7 @@ public class SubscriptionsController(AppDbContext db, MockSubscriptionProviderSe
             return BadRequest("Customer not found.");
         }
 
-        var validation = subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
+        var validation = await subscriptionProviderService.ValidateAsync(request.Type, request.ProviderName, request.SubscriberNumber);
         if (!validation.IsValid)
         {
             return BadRequest(validation.Message);
@@ -65,9 +65,9 @@ public class SubscriptionsController(AppDbContext db, MockSubscriptionProviderSe
     }
 
     [HttpPost("validate")]
-    public ActionResult<SubscriptionValidationResult> Validate(ValidateSubscriptionRequest request)
+    public async Task<ActionResult<SubscriptionValidationResult>> Validate(ValidateSubscriptionRequest request)
     {
-        return subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
+        return await subscriptionProviderService.ValidateAsync(request.Type, request.ProviderName, request.SubscriberNumber);
     }
 
     [HttpPut("{id:int}")]
@@ -79,7 +79,7 @@ public class SubscriptionsController(AppDbContext db, MockSubscriptionProviderSe
             return NotFound();
         }
 
-        var validation = subscriptionProviderService.Validate(request.Type, request.ProviderName, request.SubscriberNumber);
+        var validation = await subscriptionProviderService.ValidateAsync(request.Type, request.ProviderName, request.SubscriberNumber);
         if (!validation.IsValid)
         {
             return BadRequest(validation.Message);
@@ -93,6 +93,21 @@ public class SubscriptionsController(AppDbContext db, MockSubscriptionProviderSe
         subscription.PreferredPaymentDay = request.PreferredPaymentDay;
 
         await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, UpdateSubscriptionStatusRequest request)
+    {
+        var subscription = await db.Subscriptions.FindAsync(id);
+        if (subscription is null)
+        {
+            return NotFound();
+        }
+
+        subscription.Status = request.Status;
+        await db.SaveChangesAsync();
+
         return NoContent();
     }
 
@@ -131,3 +146,5 @@ public record UpdateSubscriptionRequest(
     string SubscriberNumber,
     SubscriptionStatus Status,
     int PreferredPaymentDay);
+
+public record UpdateSubscriptionStatusRequest(SubscriptionStatus Status);
