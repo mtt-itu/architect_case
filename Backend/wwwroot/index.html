@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Abonelik ve Odeme Hatirlatma</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Abonelik ve Odeme Hatirlatma</h1>
+      <p>Musteri girisi ile abonelik ve odeme takibi.</p>
+    </div>
+    <button id="logoutButton" class="secondary hidden">Cikis Yap</button>
+  </header>
+
+  <main>
+    <section id="authPanel" class="auth-grid">
+      <div class="card">
+        <h2>Giris Yap</h2>
+        <form id="loginForm">
+          <input id="loginUsername" placeholder="Kullanici adi" required>
+          <input id="loginPassword" placeholder="Sifre" type="password" required>
+          <button type="submit">Giris Yap</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Kayit Ol</h2>
+        <form id="registerForm">
+          <input id="registerName" placeholder="Ad Soyad" required>
+          <input id="registerEmail" placeholder="Email" type="email" required>
+          <input id="registerPhone" placeholder="Telefon" required>
+          <input id="registerUsername" placeholder="Kullanici adi" required>
+          <input id="registerPassword" placeholder="Sifre" type="password" required>
+          <button type="submit">Kayit Ol</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="appPanel" class="hidden app-grid">
+      <section class="card">
+        <h2>Profil</h2>
+        <form id="profileForm">
+          <input id="profileName" placeholder="Ad Soyad" required>
+          <input id="profileEmail" placeholder="Email" type="email" required>
+          <input id="profilePhone" placeholder="Telefon" required>
+          <input id="profileUsername" placeholder="Kullanici adi" required>
+          <input id="profilePassword" placeholder="Yeni sifre (opsiyonel)" type="password">
+          <button type="submit">Profili Guncelle</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Odenmemisler</h2>
+          <button id="refreshReminders" class="secondary">Kontrol Et</button>
+        </div>
+        <div id="reminders" class="muted">Aktif musteri girisi bekleniyor.</div>
+      </section>
+
+      <section class="card">
+        <h2>Abonelik Ekle</h2>
+        <form id="subscriptionForm">
+          <select id="subscriptionType" required>
+            <option value="1">Elektrik</option>
+            <option value="2">Su</option>
+            <option value="3">Internet</option>
+            <option value="4">GSM</option>
+            <option value="5">Diger</option>
+          </select>
+          <input id="providerName" placeholder="Hizmet saglayici" required>
+          <input id="subscriberNumber" placeholder="Abonelik / musteri no" required>
+          <input id="paymentDueDay" type="number" min="1" max="28" value="10" required>
+          <button type="submit">Kaydet</button>
+        </form>
+      </section>
+
+      <section class="card wide">
+        <div class="section-title">
+          <h2>Aboneliklerim</h2>
+          <button id="refreshSubscriptions" class="secondary">Yenile</button>
+        </div>
+        <div id="subscriptions"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="section-title">
+          <h2>Odeme Gecmisim</h2>
+          <button id="refreshPayments" class="secondary">Yenile</button>
+        </div>
+        <div id="payments"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
